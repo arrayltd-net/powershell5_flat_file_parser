@@ -1,0 +1,11 @@
+Below are the commands to import the file and then to run the function with the parameters to make it work
+sample_file_whole.txt in this github contains a sample log that is being split. for reference.
+sample_file_split_1 and sample_file_split_2 contain samples of the split files
+
+
+PS C:\powershell\filesplitter> . .\Split-File.ps1
+
+PS C:\powershell\filesplitter> Split-File -inputfile "C:\powershell\input\input.
+txt" -UniqueStringToSearchAndNameFile "LYR-" -RemoveEmptyFiles $true -outputpath
+ "C:\powershell\output" -SplitFileOnUniqueString $true -ElementOfUniqueStringToS
+earchAndNameFile 0 -SplitFileString "Beatles Song"
