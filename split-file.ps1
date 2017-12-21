@@ -1,123 +1,99 @@
 Function Split-File{
 
-    [cmdletbinding()]
-    Param(
+
+ Param(
     [Parameter(Mandatory=$true,
             HelpMessage="Enter the string that will be identify the unique string: -WP, -EP, ... The returned
             field will be used as the file name")]
             [Alias('facility')]
-            [string] $UniqueStringToSearchAndNameFile,
+            [string] $unique_string,
     [Parameter(Mandatory=$true,
-            HelpMessage="Enter the path to the file that needs to be split")]
-            [string] $InputFile,
+           HelpMessage = "Enter the element of line that will be used to name each file after
+           it has been split. It also needs to be unique within
+           the source file. The elements are space delimited so you can't have spaces in this field")]
+            [string] $unique_element,
+    [Parameter(Mandatory=$true,
+           HelpMessage = "This is the output folder. Must include trailing backslash")]
+            [string] $rootname,
+    [Parameter(Mandatory=$true,
+           HelpMessage = "This is the complete path of the input file.")]
+            [string] $inputfile,                 
     [Parameter(
-            HelpMessage="Remove files that don't have a UniqueStringToSearchAndNameFile")]
-            [string] $RemoveEmptyFiles = $false,
-    [Parameter(Mandatory=$true,
-            HelpMessage="Enter string to split files upon finding.")]
-            [string] $SplitFileString,
-    [Parameter(Mandatory=$true,
-            HelpMessage="Enter folder path to store output files. e.g. c:\output or c:\output\")]
-            [string] $outputpath,
-    [Parameter(Mandatory=$true,
-            HelpMessage="Enter folder path to store output files. e.g. c:\output or c:\output\")]
-            [string] $SplitFileOnUniqueString = $true,
-    [Parameter(Mandatory=$true,
-            HelpMessage="Enter folder path to store output files. e.g. c:\output or c:\output\")]
-            [string] $ElementOfUniqueStringToSearchAndNameFile
+           HelpMessage = "This is the extension of the output file to use")]
+            [string] $ext="txt",
+    [Parameter(
+           HelpMessage = "The file will split on this string")]
+            [string] $SplitFileString                 
+            
+            
+            
+)
+    #open the input file
+    $reader = new-object System.IO.StreamReader("$inputfile")
+    $count = 0
+    $listoffiles = @()
 
-                   
-                    
-    )
-
-
-    $contents = get-content $InputFile
-    write-host $contents
-    $count = -1
-    $locationcount = 0
-
-
-    #split file into files with names 0, 1, 2...
-    foreach ($line in $contents){
-
-    #create files with numbers as file names.
-       
-       if($line -match ($SplitFileString)) {
-            $count ++
-            $line |out-file (join-path -Path $outputpath -ChildPath $([string]$count))
-       }
-       
-       else{
-      
-       $line |out-file -append (join-path -Path $outputpath -ChildPath $([string]$count))
-       }
-    }
-   
-   #One imperfection in this program is if there isn't a match to $splitfileon string
-   #at the beginning of the file, it will write a file called -1 and leave it. This removes that file
-   try{
-    Remove-Item (join-path -Path $outputpath -ChildPath "-1" -ErrorAction Silentlycontinue)
-   }
-  catch{}  
+    $unique_element = $unique_element
+    $unique_string = $unique_string
 
     
-  
+    $fileName = "{0}{1}.{2}" -f ($rootName, $count, $ext)
+    
+    #read file and output to a file name, splitting on the $unique_string
+    while(($line = $reader.ReadLine()) -ne $null)
 
-    #rename each file to match the location which is defined as being
-    
-    #located at the first element of the line and ending with -WP
-    
-    
-    
-        #get all files and put into array to enable searching
-        [array]$files = @()
-        for($i = 0; $i -le $count; $i++){
-          $files += (join-path -Path $outputpath -ChildPath $i)
+    {
+        if($line -notmatch "$splitfilestring"){
+           $line |out-file -append $filename
+           
+        }
+        
+        if($line -match "$splitfilestring"){
+           $fileName = "{0}{1}.{2}" -f ($rootName, $count, $ext)
+           $line |out-file $fileName
+           $listoffiles +=$filename
+           $count++     
         }
        
-        
-    
-        foreach($file in $files){
-            
-            $linecount = 0   #used to locate the line number the location is found in
-            $location = "" # used to store the line number of the UniqueStringToSearchAndNameFile if it's found
-           
-            $filecontent = Get-Content $file
-          
-            foreach($line in $filecontent){
-                $linearray = $line -split '\s+' 
+    }
 
-                    if($linearray[$ElementOfUniqueStringToSearchAndNameFile] -match ("$UniqueStringToSearchAndNameFile")){
-                        $locationcount++
-                       
-                        $foundlocation = $linearray[$linecount]
-                        $location = $filecontent |select -Index $linecount
-                        
-                        $joinedoutputfile = Join-Path -Path $outputpath -ChildPath $([string]$location + ".txt")
-                     
-                        #rename-Item -Path $([string]$file) -NewName  $([string]$location)
-                        try{
-                            Move-Item -path  $([string]$file) -Destination (Join-Path -Path $outputpath -ChildPath $([string]$location + ".txt")) -force
-                        }
-                        catch{}
-                    }
-                $linecount++
+    $reader.Close()
+
+    #wait for reader to close
+    Start-Sleep -Milliseconds 2000
+
+    #read each file and build a hash table - filename:unique_element
+    $namepath_ht = @{}
+    foreach($file in $listoffiles){
+        $reader = new-object System.IO.StreamReader($file)
+        
+        while(($line = $reader.readline()) -ne $null){
+            $eachline = $line -split '\s+'
+            
+            if($eachline[$unique_element] -match $unique_string){
+                $namepath_ht.set_item([string]$file, $eachline[$unique_element])
+                
             }
             
-                #Remove files that only have no UniqueStringToSearchAndName.
-                if (($locationcount -eq 0) -and ($RemoveEmptyFiles -eq $true)){
-                  Remove-Item -Path $file
-              }
-              
-              
-              
+            
         }
-        
-        
-        
-   
+    }    
+    $reader.close()
 
-"Number of Unique Records Found: " + $locationcount | out-file -force (Join-Path -Path $outputpath -ChildPath _output_summary.txt)
+    #wait for reader to close
+    Start-Sleep -Milliseconds 2000 
+
+    foreach($kvp in $namepath_ht.GetEnumerator())
+    {
+        $destination = $kvp.value
+        $source = $kvp.key
+        $source
+        $destination
+        try{
+            Move-Item -path $source -Destination $("{0}{1}.{2}" -f ($rootName, $destination, $ext)) -force
+        }
+        catch{}
+    }
 
 
 }
