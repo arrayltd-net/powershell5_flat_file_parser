@@ -47,9 +47,6 @@ Function Split-File{
     }
     catch{}
     New-Item -ItemType directory -path $tempfolder
-   
-    $tempfolder
-
     
     $fileName = "{0}{1}.{2}" -f ($tempfolder, $count, $ext)
     
