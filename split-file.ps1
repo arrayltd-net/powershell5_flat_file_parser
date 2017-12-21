@@ -23,7 +23,10 @@ Function Split-File{
             [string] $ext="txt",
     [Parameter(
            HelpMessage = "The file will split on this string")]
-            [string] $SplitFileString                 
+            [string] $SplitFileString,
+    [Parameter(
+           HelpMessage = "Temporary output directory. Must use trailing backslash.")]
+            [string] $tempfolder                      
             
             
             
@@ -32,12 +35,23 @@ Function Split-File{
     $reader = new-object System.IO.StreamReader("$inputfile")
     $count = 0
     $listoffiles = @()
+    
+    
+    
 
     $unique_element = $unique_element
     $unique_string = $unique_string
+    
+    try{
+    Remove-Item -R -Path $tempfolder -Force
+    }
+    catch{}
+    New-Item -ItemType directory -path $tempfolder
+   
+    $tempfolder
 
     
-    $fileName = "{0}{1}.{2}" -f ($rootName, $count, $ext)
+    $fileName = "{0}{1}.{2}" -f ($tempfolder, $count, $ext)
     
     #read file and output to a file name, splitting on the $unique_string
     while(($line = $reader.ReadLine()) -ne $null)
@@ -49,7 +63,7 @@ Function Split-File{
         }
         
         if($line -match "$splitfilestring"){
-           $fileName = "{0}{1}.{2}" -f ($rootName, $count, $ext)
+           $fileName = "{0}{1}.{2}" -f ($tempfolder, $count, $ext)
            $line |out-file $fileName
            $listoffiles +=$filename
            $count++     
@@ -60,7 +74,7 @@ Function Split-File{
     $reader.Close()
 
     #wait for reader to close
-    Start-Sleep -Milliseconds 2000
+    Start-Sleep -Milliseconds 10000
 
     #read each file and build a hash table - filename:unique_element
     $namepath_ht = @{}
@@ -81,7 +95,7 @@ Function Split-File{
     $reader.close()
 
     #wait for reader to close
-    Start-Sleep -Milliseconds 2000 
+    Start-Sleep -Milliseconds 10000
     
     foreach($kvp in $namepath_ht.GetEnumerator())
     {
