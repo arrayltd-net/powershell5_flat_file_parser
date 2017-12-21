@@ -5,4 +5,4 @@ sample_file_split_1 and sample_file_split_2 contain samples of the split files
 Open Powershell
  . .\Split-File.ps1
 
-split-file -rootname "C:\powershell\output\" -inputfile "C:\powershell\input\input.txt" -unique_string "LYR-" -unique_element 0 -SplitFileString "beatles song"
+split-file -tempfolder "c:\powershell\output\temp\"-rootname "C:\powershell\output\" -inputfile "C:\powershell\input\input.txt" -unique_string "LYR-" -unique_element 0 -SplitFileString "beatles song"
