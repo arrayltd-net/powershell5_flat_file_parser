@@ -82,18 +82,15 @@ Function Split-File{
 
     #wait for reader to close
     Start-Sleep -Milliseconds 2000 
-
+    
     foreach($kvp in $namepath_ht.GetEnumerator())
     {
         $destination = $kvp.value
         $source = $kvp.key
-        $source
-        $destination
+        
         try{
             Move-Item -path $source -Destination $("{0}{1}.{2}" -f ($rootName, $destination, $ext)) -force
         }
         catch{}
     }
-
-
 }
